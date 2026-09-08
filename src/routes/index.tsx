@@ -30,7 +30,7 @@ import { formatPrice, unitPriceOf, useCart } from "../lib/cart";
 import { useWishlist } from "../lib/wishlist";
 import { AdSlot } from "@/components/ad-slot";
 
-const title = "Mayor Beauty Place — Beauty Empire in Peckham, London";
+const title = "Mayor Beauty Place | Elevate Your Everyday Look";
 const description =
   "Mayor Beauty Place: a successful career in the beauty industry. Beauty treatments, expert consultation, professional ethics and quality products in Peckham, London.";
 
