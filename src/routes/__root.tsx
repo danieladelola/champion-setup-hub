@@ -84,7 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Mayor Beauty Place" },
+      { title: "Mayor Beauty Place | Elevate Your Everyday Look" },
       {
         name: "description",
         content:
