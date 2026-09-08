@@ -19,6 +19,19 @@ export const AD_PLACEMENTS = [
 
 export const AD_PLACEMENT_VALUES = AD_PLACEMENTS.map((p) => p.value);
 
+export const AD_DISPLAY_TYPES = [
+  { value: "embed", label: "Embedded banner (inside the page)" },
+  { value: "popup", label: "Popup (opens over the page)" },
+] as const;
+
+const optionalDate = z
+  .string()
+  .trim()
+  .optional()
+  .nullable()
+  .transform((v) => (v ? v : null))
+  .refine((v) => v === null || !Number.isNaN(Date.parse(v)), "Invalid date");
+
 export const adSchema = z.object({
   title: z.string().trim().max(200).default(""),
   image_url: z.string().trim().min(1, "Ad image is required").max(1000),
@@ -30,8 +43,13 @@ export const adSchema = z.object({
     .nullable()
     .transform((v) => (v ? v : null)),
   placement: z.enum(AD_PLACEMENT_VALUES as [string, ...string[]]),
+  display_type: z.enum(["embed", "popup"]).default("embed"),
+  starts_at: optionalDate,
+  ends_at: optionalDate,
+  popup_delay_seconds: z.coerce.number().int().min(0).max(120).default(3),
   sort_order: z.coerce.number().int().min(0).default(0),
   active: z.boolean().default(true),
 });
+
 
 export type AdInput = z.infer<typeof adSchema>;

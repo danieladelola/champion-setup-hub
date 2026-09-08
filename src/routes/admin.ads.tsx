@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { adminApi, type Ad } from "@/lib/admin-api";
-import { AD_PLACEMENTS } from "@/lib/ads.server";
+import { AD_DISPLAY_TYPES, AD_PLACEMENTS } from "@/lib/ads.server";
 
 const title = "Ads — Mayor Beauty Place Admin";
 const description = "Create and manage website adverts and their placements.";
@@ -34,7 +34,19 @@ type FormState = {
   placement: string;
   sort_order: string;
   active: boolean;
+  display_type: "embed" | "popup";
+  starts_at: string;
+  ends_at: string;
+  popup_delay_seconds: string;
 };
+
+function toLocalInput(value: string | null | undefined) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 const emptyForm: FormState = {
   title: "",
@@ -43,6 +55,10 @@ const emptyForm: FormState = {
   placement: AD_PLACEMENTS[0].value,
   sort_order: "0",
   active: true,
+  display_type: "embed",
+  starts_at: "",
+  ends_at: "",
+  popup_delay_seconds: "3",
 };
 
 function toForm(a: Ad): FormState {
@@ -53,6 +69,10 @@ function toForm(a: Ad): FormState {
     placement: a.placement,
     sort_order: String(a.sort_order ?? 0),
     active: a.active,
+    display_type: a.display_type ?? "embed",
+    starts_at: toLocalInput(a.starts_at),
+    ends_at: toLocalInput(a.ends_at),
+    popup_delay_seconds: String(a.popup_delay_seconds ?? 3),
   };
 }
 
@@ -64,7 +84,30 @@ function toPayload(f: FormState) {
     placement: f.placement,
     sort_order: Number(f.sort_order || 0),
     active: f.active,
+    display_type: f.display_type,
+    starts_at: f.starts_at ? new Date(f.starts_at).toISOString() : null,
+    ends_at: f.ends_at ? new Date(f.ends_at).toISOString() : null,
+    popup_delay_seconds: Number(f.popup_delay_seconds || 0),
   };
+}
+
+function fmt(value: string | null) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime())
+    ? null
+    : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function scheduleLabel(ad: Ad) {
+  const from = fmt(ad.starts_at);
+  const to = fmt(ad.ends_at);
+  const now = Date.now();
+  if (ad.ends_at && new Date(ad.ends_at).getTime() <= now) return `Ended ${to}`;
+  if (ad.starts_at && new Date(ad.starts_at).getTime() > now)
+    return to ? `Scheduled ${from} → ${to}` : `Scheduled from ${from}`;
+  if (to) return `Running until ${to}`;
+  return "Always on (no end date)";
 }
 
 function placementLabel(value: string) {
@@ -211,6 +254,56 @@ function Page() {
               />
             </Field>
           </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field label="How it shows">
+              <select
+                className={inputCls}
+                value={form.display_type}
+                onChange={(e) =>
+                  setForm({ ...form, display_type: e.target.value as "embed" | "popup" })
+                }
+              >
+                {AD_DISPLAY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {form.display_type === "popup" ? (
+              <Field label="Popup delay (seconds)">
+                <input
+                  type="number"
+                  min={0}
+                  max={120}
+                  className={inputCls}
+                  value={form.popup_delay_seconds}
+                  onChange={(e) => setForm({ ...form, popup_delay_seconds: e.target.value })}
+                />
+              </Field>
+            ) : null}
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field label="Start showing (optional)">
+              <input
+                type="datetime-local"
+                className={inputCls}
+                value={form.starts_at}
+                onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+              />
+            </Field>
+            <Field label="Stop showing (optional)">
+              <input
+                type="datetime-local"
+                className={inputCls}
+                value={form.ends_at}
+                onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
+              />
+            </Field>
+          </div>
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Leave the dates empty to run the ad until you switch it off.
+          </p>
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -268,8 +361,10 @@ function Page() {
                   <div className="min-w-0">
                     <h3 className="truncate font-display text-lg">{ad.title || "Untitled ad"}</h3>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {placementLabel(ad.placement)} · order {ad.sort_order}
+                      {placementLabel(ad.placement)} · order {ad.sort_order} ·{" "}
+                      {ad.display_type === "popup" ? "popup" : "banner"}
                     </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{scheduleLabel(ad)}</p>
                     {ad.link_url ? (
                       <a
                         href={ad.link_url}
