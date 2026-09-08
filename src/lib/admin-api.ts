@@ -415,6 +415,18 @@ export const bookingPublicApi = {
     }),
   byReference: (reference: string) =>
     request<{ booking: PublicBooking }>(`/api/bookings/${reference}`),
+  dayAvailability: (date: string, serviceId?: string) =>
+    request<{ date: string; unavailable: string[]; slots: string[] }>(
+      `/api/availability?date=${encodeURIComponent(date)}${
+        serviceId ? `&service_id=${encodeURIComponent(serviceId)}` : ""
+      }`,
+    ),
+  monthAvailability: (month: string, serviceId?: string) =>
+    request<{ month: string; fully_booked: string[] }>(
+      `/api/availability?month=${encodeURIComponent(month)}${
+        serviceId ? `&service_id=${encodeURIComponent(serviceId)}` : ""
+      }`,
+    ),
 };
 
 export type PublicBooking = {

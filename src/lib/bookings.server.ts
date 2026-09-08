@@ -1,4 +1,5 @@
 import { getDb } from "./db.server";
+import { isSlotAvailable } from "./availability.server";
 import type { bookingSchema } from "./services.server";
 import type { z } from "zod";
 
@@ -35,6 +36,17 @@ export async function createPendingBooking(input: BookingInput) {
   if (!service) throw new BookingError("That service is no longer available.", 400);
 
   const price = Number(service["price"] ?? 0);
+  const duration = Number(service["duration_minutes"] ?? 0);
+
+  // Guard against two people paying for the same slot (the browser greys taken
+  // slots out, but the check has to live here too).
+  const free = await isSlotAvailable(input.preferred_date, input.preferred_time, duration);
+  if (!free) {
+    throw new BookingError(
+      "That time has just been booked. Please choose another time.",
+      409,
+    );
+  }
 
   let created: Record<string, unknown> | undefined;
   for (let attempt = 0; attempt < 5 && !created; attempt++) {
