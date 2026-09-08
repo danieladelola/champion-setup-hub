@@ -8,7 +8,8 @@ const rows = [...dump.matchAll(
   /^\((\d+), (?:\d+|NULL), '(?:simple|collaborative|compound|package)', '((?:[^'\\]|\\.)*)', (?:NULL|\d+), (\d+), 'default', ([\d.]+),/gm,
 )];
 
-const norm = (t: string) => t.replace(/\\'/g, "'").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const ALIAS: Record<string, string> = { chin: "chinfrom", side: "sidefrom" };
+const norm = (t: string) => t.replace(/\\'/g, "'").toLowerCase().replace(/makeup/g, "make up").replace(/[^a-z0-9]+/g, " ").trim();
 const map = new Map<string, { price: number; dur: number }>();
 for (const m of rows) {
   const price = Number(m[4]);
@@ -36,7 +37,8 @@ const svc = await sql<{ id: string; name: string }[]>`select id, name from servi
 let updated = 0;
 const missing: string[] = [];
 for (const row of svc) {
-  const hit = map.get(norm(row.name)) ?? fuzzy(row.name);
+  const key = norm(row.name);
+  const hit = map.get(ALIAS[key] ?? key) ?? map.get(key) ?? fuzzy(row.name);
   if (!hit) { missing.push(row.name); continue; }
   await sql`update services set price = ${hit.price}, duration_minutes = ${hit.dur}, updated_at = now() where id = ${row.id}`;
   updated++;
