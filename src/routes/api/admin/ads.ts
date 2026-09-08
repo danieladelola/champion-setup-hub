@@ -44,8 +44,10 @@ export const Route = createFileRoute("/api/admin/ads")({
         const sql = getDb();
         try {
           const rows = await sql`
-            insert into ads (title, image_url, link_url, placement, sort_order, active)
-            values (${a.title}, ${a.image_url}, ${a.link_url}, ${a.placement}, ${a.sort_order}, ${a.active})
+            insert into ads (title, image_url, link_url, placement, sort_order, active,
+                             display_type, starts_at, ends_at, popup_delay_seconds)
+            values (${a.title}, ${a.image_url}, ${a.link_url}, ${a.placement}, ${a.sort_order}, ${a.active},
+                    ${a.display_type}, ${a.starts_at}, ${a.ends_at}, ${a.popup_delay_seconds})
             returning *`;
           return json({ ad: rows[0] }, { status: 201 });
         } catch (error) {

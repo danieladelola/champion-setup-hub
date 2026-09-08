@@ -27,6 +27,8 @@ export const Route = createFileRoute("/api/admin/ads/$id")({
             update ads set
               title = ${a.title}, image_url = ${a.image_url}, link_url = ${a.link_url},
               placement = ${a.placement}, sort_order = ${a.sort_order}, active = ${a.active},
+              display_type = ${a.display_type}, starts_at = ${a.starts_at}, ends_at = ${a.ends_at},
+              popup_delay_seconds = ${a.popup_delay_seconds},
               updated_at = now()
             where id = ${params.id}
             returning *`;
