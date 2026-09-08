@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { json } from "@/lib/auth.server";
 import { getDb } from "@/lib/db.server";
 import { bookingSchema } from "@/lib/services.server";
+import { isSlotAvailable } from "@/lib/availability.server";
 
 export const Route = createFileRoute("/api/bookings")({
   server: {
@@ -32,6 +33,18 @@ export const Route = createFileRoute("/api/bookings")({
             limit 1`;
           const service = rows[0];
           if (!service) return json({ error: "Service unavailable" }, { status: 400 });
+
+          const free = await isSlotAvailable(
+            b.preferred_date,
+            b.preferred_time,
+            Number(service["duration_minutes"] ?? 0),
+          );
+          if (!free) {
+            return json(
+              { error: "That time has just been booked. Please choose another time." },
+              { status: 409 },
+            );
+          }
 
           const inserted = await sql`
             insert into bookings (full_name, email, phone, customer_name, customer_email,
