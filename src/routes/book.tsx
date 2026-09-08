@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Check,
@@ -25,6 +25,7 @@ import { Calendar as DateCalendar } from "@/components/ui/calendar";
 import bookingHeroAsset from "@/assets/booking-hero-lashes.webp";
 import { bookingPublicApi } from "@/lib/admin-api";
 import { AdSlot } from "@/components/ad-slot";
+import { TIME_SLOTS } from "@/lib/availability";
 
 const title = "Book A Service — Mayor Beauty Place";
 const description =
@@ -74,11 +75,6 @@ const steps = [
   { id: 5, label: "Done", icon: Check },
 ];
 
-// 11:00 → 18:00 in 10 minute increments
-const TIME_SLOTS = Array.from({ length: (18 - 11) * 6 + 1 }, (_, i) => {
-  const minutes = 11 * 60 + i * 10;
-  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-});
 
 
 const inputClass =
@@ -172,6 +168,56 @@ function Book() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const [month, setMonth] = useState<Date>(selectedDate ?? today);
+
+  const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
+
+  // Live from the database: which slots on the chosen day are taken, and which
+  // days in the visible month have nothing left at all.
+  const { data: dayAvailability, isFetching: loadingSlots } = useQuery({
+    queryKey: ["booking", "availability", "day", data.date, data.serviceId],
+    queryFn: () => bookingPublicApi.dayAvailability(data.date, data.serviceId || undefined),
+    enabled: !!data.date,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+  });
+
+  const { data: monthAvailability } = useQuery({
+    queryKey: ["booking", "availability", "month", monthKey, data.serviceId],
+    queryFn: () => bookingPublicApi.monthAvailability(monthKey, data.serviceId || undefined),
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+  });
+
+  const takenSlots = useMemo(
+    () => new Set(dayAvailability?.unavailable ?? []),
+    [dayAvailability],
+  );
+
+  const fullyBookedDates = useMemo(
+    () =>
+      (monthAvailability?.fully_booked ?? []).map((d) => new Date(`${d}T00:00:00`)),
+    [monthAvailability],
+  );
+
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const isToday = data.date === toLocalIso(new Date());
+
+  const isSlotDisabled = (slot: string) => {
+    if (takenSlots.has(slot)) return true;
+    if (isToday) {
+      const [h, m] = slot.split(":").map(Number);
+      if ((h ?? 0) * 60 + (m ?? 0) <= nowMinutes) return true;
+    }
+    return false;
+  };
+
+  // If the chosen time gets booked by someone else, drop it.
+  useEffect(() => {
+    if (data.time && takenSlots.has(data.time)) {
+      update("time", "");
+      setError("That time was just booked by someone else. Please pick another.");
+    }
+  }, [takenSlots, data.time]);
 
 
   return (
@@ -365,7 +411,7 @@ function Book() {
                           if (mods["disabled"]) return;
                           update("date", toLocalIso(date));
                         }}
-                        disabled={{ before: today }}
+                        disabled={[{ before: today }, ...fullyBookedDates]}
                         defaultMonth={selectedDate ?? today}
                         month={month}
                         onMonthChange={setMonth}
@@ -391,22 +437,37 @@ function Book() {
 
                   <div className="space-y-3">
                     <Label className="text-base text-brand-blue">Time</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {!data.date
+                        ? "Pick a date first to see the free times."
+                        : loadingSlots
+                          ? "Checking which times are still free…"
+                          : "Crossed-out times are already booked."}
+                    </p>
                     <div className="grid max-h-[420px] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
 
-                      {TIME_SLOTS.map((slot) => (
-                        <button
-                          key={slot}
-                          type="button"
-                          onClick={() => update("time", slot)}
-                          className={`rounded-xl border px-3 py-3 text-sm transition-all ${
-                            data.time === slot
-                              ? "border-brand-blue bg-brand-blue text-on-brand"
-                              : "border-border bg-card hover:border-brand-blue/40 hover:bg-secondary/50"
-                          }`}
-                        >
-                          {slot}
-                        </button>
-                      ))}
+                      {TIME_SLOTS.map((slot) => {
+                        const disabled = isSlotDisabled(slot);
+                        return (
+                          <button
+                            key={slot}
+                            type="button"
+                            disabled={disabled}
+                            aria-disabled={disabled}
+                            title={disabled ? "Already booked" : undefined}
+                            onClick={() => !disabled && update("time", slot)}
+                            className={`rounded-xl border px-3 py-3 text-sm transition-all ${
+                              disabled
+                                ? "cursor-not-allowed border-border/60 bg-secondary/40 text-muted-foreground/60 line-through"
+                                : data.time === slot
+                                  ? "border-brand-blue bg-brand-blue text-on-brand"
+                                  : "border-border bg-card hover:border-brand-blue/40 hover:bg-secondary/50"
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
