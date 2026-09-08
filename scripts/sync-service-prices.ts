@@ -18,11 +18,25 @@ for (const m of rows) {
 }
 
 const sql = getDb();
+const tokens = (t: string) => new Set(norm(t).split(" ").filter((w) => w.length > 1 && !["with","and","the","for","only","per"].includes(w)));
+const sourceTokens = [...map.entries()].map(([key, value]) => ({ key, value, set: tokens(key) }));
+function fuzzy(name: string) {
+  const want = tokens(name);
+  let best: { value: { price: number; dur: number }; score: number } | null = null;
+  for (const entry of sourceTokens) {
+    let shared = 0;
+    for (const w of want) if (entry.set.has(w)) shared++;
+    const score = shared / Math.max(want.size, entry.set.size, 1);
+    if (!best || score > best.score) best = { value: entry.value, score };
+  }
+  return best && best.score >= 0.6 ? best.value : null;
+}
+
 const svc = await sql<{ id: string; name: string }[]>`select id, name from services`;
 let updated = 0;
 const missing: string[] = [];
 for (const row of svc) {
-  const hit = map.get(norm(row.name));
+  const hit = map.get(norm(row.name)) ?? fuzzy(row.name);
   if (!hit) { missing.push(row.name); continue; }
   await sql`update services set price = ${hit.price}, duration_minutes = ${hit.dur}, updated_at = now() where id = ${row.id}`;
   updated++;
