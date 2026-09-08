@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Vite variables are inlined at build time, so they must be build args.
+        VITE_ELFSIGHT_REVIEWS_ID: ${VITE_ELFSIGHT_REVIEWS_ID:-}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "3000:3000"

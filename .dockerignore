@@ -1,0 +1,13 @@
+node_modules
+.output
+.nitro
+.vinxi
+dist
+.git
+.github
+.env
+.env.*
+*.log
+tsconfig.tsbuildinfo
+.lovable
+/tmp
