@@ -144,6 +144,16 @@ function Page() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleService = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      bookingApi.setServiceActive(id, active),
+    onSuccess: (_data, vars) => {
+      toast.success(vars.active ? "Service switched on" : "Service switched off");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const toCategoryForm = (c: ServiceCategory): CategoryForm => ({
     id: c.id,
     name: c.name,
@@ -263,7 +273,6 @@ function Page() {
                 <table className="w-full min-w-[640px] text-sm">
                   <thead className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
                     <tr>
-                      <th className="px-3 py-2">Order</th>
                       <th className="px-3 py-2">Name</th>
                       <th className="px-3 py-2">Price</th>
                       <th className="px-3 py-2">Duration</th>
@@ -274,20 +283,40 @@ function Page() {
                   <tbody>
                     {filtered.map((s) => (
                       <tr key={s.id} className="border-b border-border/60 last:border-0">
-                        <td className="px-3 py-2 text-muted-foreground">{s.sort_order}</td>
                         <td className="px-3 py-2 font-medium">{s.name}</td>
                         <td className="px-3 py-2">£{Number(s.price ?? 0).toFixed(2)}</td>
                         <td className="px-3 py-2">{s.duration_minutes} min</td>
                         <td className="px-3 py-2">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-xs ${
-                              s.active
-                                ? "bg-brand-blue/10 text-brand-blue"
-                                : "bg-muted text-muted-foreground"
-                            }`}
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={s.active}
+                            aria-label={`${s.active ? "Switch off" : "Switch on"} ${s.name}`}
+                            disabled={toggleService.isPending}
+                            onClick={() =>
+                              toggleService.mutate({ id: s.id, active: !s.active })
+                            }
+                            className="flex items-center gap-2 text-xs"
                           >
-                            {s.active ? "Active" : "Inactive"}
-                          </span>
+                            <span
+                              className={`relative h-5 w-9 rounded-full transition-colors ${
+                                s.active ? "bg-brand-blue" : "bg-muted"
+                              }`}
+                            >
+                              <span
+                                className={`absolute top-0.5 h-4 w-4 rounded-full bg-card shadow-soft transition-all ${
+                                  s.active ? "left-4.5" : "left-0.5"
+                                }`}
+                              />
+                            </span>
+                            <span
+                              className={
+                                s.active ? "text-brand-blue" : "text-muted-foreground"
+                              }
+                            >
+                              {s.active ? "On" : "Off"}
+                            </span>
+                          </button>
                         </td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">
                           <button
@@ -413,7 +442,7 @@ function Page() {
                 className={inputClass}
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Price (£)</Label>
                 <Input
@@ -431,17 +460,6 @@ function Page() {
                   value={serviceForm.duration_minutes}
                   onChange={(e) =>
                     setServiceForm({ ...serviceForm, duration_minutes: e.target.value })
-                  }
-                  className={inputClass}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Order</Label>
-                <Input
-                  type="number"
-                  value={serviceForm.sort_order}
-                  onChange={(e) =>
-                    setServiceForm({ ...serviceForm, sort_order: e.target.value })
                   }
                   className={inputClass}
                 />
