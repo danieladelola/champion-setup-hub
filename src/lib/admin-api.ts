@@ -362,6 +362,11 @@ export const bookingApi = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  setServiceActive: (id: string, active: boolean) =>
+    request<{ service: Service }>(`/api/admin/services/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ active }),
+    }),
   deleteService: (id: string) =>
     request<{ ok: true }>(`/api/admin/services/${id}`, { method: "DELETE" }),
   bookings: () => request<{ bookings: Booking[] }>("/api/admin/bookings"),

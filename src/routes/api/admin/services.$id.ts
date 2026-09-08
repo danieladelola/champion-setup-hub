@@ -40,6 +40,31 @@ export const Route = createFileRoute("/api/admin/services/$id")({
           return json({ error: "Could not update service" }, { status: 500 });
         }
       },
+      PATCH: async ({ request, params }) => {
+        const admin = await getAdminFromRequest(request).catch(() => null);
+        if (!admin) return json({ error: "Unauthorized" }, { status: 401 });
+        let body: unknown;
+        try {
+          body = await request.json();
+        } catch {
+          return json({ error: "Invalid request" }, { status: 400 });
+        }
+        const active = (body as { active?: unknown })?.active;
+        if (typeof active !== "boolean") {
+          return json({ error: "Invalid request" }, { status: 400 });
+        }
+        try {
+          const sql = getDb();
+          const rows = await sql`
+            update services set active = ${active}, updated_at = now()
+            where id = ${params.id}
+            returning *`;
+          if (!rows[0]) return json({ error: "Not found" }, { status: 404 });
+          return json({ service: rows[0] });
+        } catch {
+          return json({ error: "Could not update service" }, { status: 500 });
+        }
+      },
       DELETE: async ({ request, params }) => {
         const admin = await getAdminFromRequest(request).catch(() => null);
         if (!admin) return json({ error: "Unauthorized" }, { status: 401 });
