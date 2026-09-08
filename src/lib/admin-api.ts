@@ -46,9 +46,14 @@ export type Ad = {
   placement: string;
   sort_order: number;
   active: boolean;
+  display_type: "embed" | "popup";
+  starts_at: string | null;
+  ends_at: string | null;
+  popup_delay_seconds: number;
   created_at?: string;
   updated_at?: string;
 };
+
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
