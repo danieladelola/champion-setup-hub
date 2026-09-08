@@ -30,6 +30,7 @@ import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as ApiAdsRouteImport } from './routes/api/ads'
+import { Route as ApiAvailabilityRouteImport } from './routes/api/availability'
 import { Route as ApiBookingCheckoutSessionRouteImport } from './routes/api/booking-checkout-session'
 import { Route as ApiBookingsRouteImport } from './routes/api/bookings'
 import { Route as ApiCheckoutSessionRouteImport } from './routes/api/checkout-session'
@@ -176,6 +177,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
 const ApiAdsRoute = ApiAdsRouteImport.update({
   id: '/api/ads',
   path: '/api/ads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAvailabilityRoute = ApiAvailabilityRouteImport.update({
+  id: '/api/availability',
+  path: '/api/availability',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBookingCheckoutSessionRoute =
@@ -414,6 +420,7 @@ export interface FileRoutesByFullPath {
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/api/ads': typeof ApiAdsRoute
+  '/api/availability': typeof ApiAvailabilityRoute
   '/api/booking-checkout-session': typeof ApiBookingCheckoutSessionRoute
   '/api/bookings': typeof ApiBookingsRouteWithChildren
   '/api/checkout-session': typeof ApiCheckoutSessionRoute
@@ -479,6 +486,7 @@ export interface FileRoutesByTo {
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/api/ads': typeof ApiAdsRoute
+  '/api/availability': typeof ApiAvailabilityRoute
   '/api/booking-checkout-session': typeof ApiBookingCheckoutSessionRoute
   '/api/bookings': typeof ApiBookingsRouteWithChildren
   '/api/checkout-session': typeof ApiCheckoutSessionRoute
@@ -545,6 +553,7 @@ export interface FileRoutesById {
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/api/ads': typeof ApiAdsRoute
+  '/api/availability': typeof ApiAvailabilityRoute
   '/api/booking-checkout-session': typeof ApiBookingCheckoutSessionRoute
   '/api/bookings': typeof ApiBookingsRouteWithChildren
   '/api/checkout-session': typeof ApiCheckoutSessionRoute
@@ -612,6 +621,7 @@ export interface FileRouteTypes {
     | '/admin/services'
     | '/admin/settings'
     | '/api/ads'
+    | '/api/availability'
     | '/api/booking-checkout-session'
     | '/api/bookings'
     | '/api/checkout-session'
@@ -677,6 +687,7 @@ export interface FileRouteTypes {
     | '/admin/services'
     | '/admin/settings'
     | '/api/ads'
+    | '/api/availability'
     | '/api/booking-checkout-session'
     | '/api/bookings'
     | '/api/checkout-session'
@@ -742,6 +753,7 @@ export interface FileRouteTypes {
     | '/admin/services'
     | '/admin/settings'
     | '/api/ads'
+    | '/api/availability'
     | '/api/booking-checkout-session'
     | '/api/bookings'
     | '/api/checkout-session'
@@ -808,6 +820,7 @@ export interface RootRouteChildren {
   AdminServicesRoute: typeof AdminServicesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   ApiAdsRoute: typeof ApiAdsRoute
+  ApiAvailabilityRoute: typeof ApiAvailabilityRoute
   ApiBookingCheckoutSessionRoute: typeof ApiBookingCheckoutSessionRoute
   ApiBookingsRoute: typeof ApiBookingsRouteWithChildren
   ApiCheckoutSessionRoute: typeof ApiCheckoutSessionRoute
@@ -989,6 +1002,13 @@ declare module '@tanstack/react-router' {
       path: '/api/ads'
       fullPath: '/api/ads'
       preLoaderRoute: typeof ApiAdsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/availability': {
+      id: '/api/availability'
+      path: '/api/availability'
+      fullPath: '/api/availability'
+      preLoaderRoute: typeof ApiAvailabilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/booking-checkout-session': {
@@ -1441,6 +1461,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminServicesRoute: AdminServicesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   ApiAdsRoute: ApiAdsRoute,
+  ApiAvailabilityRoute: ApiAvailabilityRoute,
   ApiBookingCheckoutSessionRoute: ApiBookingCheckoutSessionRoute,
   ApiBookingsRoute: ApiBookingsRouteWithChildren,
   ApiCheckoutSessionRoute: ApiCheckoutSessionRoute,
